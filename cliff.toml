@@ -46,7 +46,7 @@ footer = """
 trim = true
 # postprocessors
 postprocessors = [
-    { pattern = '\$REPO', replace = "https://github.com/okqin/rcli.git" }, # replace repository URL
+    { pattern = '\$REPO', replace = "https://github.com/okqin/rcli" }, # replace repository URL
 ]
 
 [git]
