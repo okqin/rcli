@@ -1,8 +1,10 @@
-use std::{fmt, path::Path};
+use std::fmt;
 
-use clap::{Parser, ValueEnum};
+use clap::{Args, ValueEnum};
 
-#[derive(Debug, Parser)]
+use super::validate_input_file;
+
+#[derive(Debug, Args)]
 pub struct CsvOpts {
     /// Input CSV file path
     #[arg(short, long, value_parser = validate_input_file)]
@@ -32,14 +34,6 @@ pub enum OutputFormat {
 
     /// output yaml format
     Yaml,
-}
-
-fn validate_input_file(filename: &str) -> Result<String, String> {
-    if Path::new(filename).exists() {
-        Ok(filename.to_string())
-    } else {
-        Err(format!("File not found: {}", filename))
-    }
 }
 
 impl fmt::Display for OutputFormat {

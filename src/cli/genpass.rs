@@ -1,6 +1,6 @@
-use clap::Parser;
+use clap::Args;
 
-#[derive(Debug, Parser)]
+#[derive(Debug, Args)]
 pub struct GenPassOpts {
     /// Length of the password
     #[arg(short, long, default_value_t = 16)]

@@ -34,3 +34,36 @@ pub fn process_csv(input: &str, output: &str, format: &str) -> anyhow::Result<()
     fs::write(output, content)?;
     Ok(())
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_process_csv_to_json() {
+        let input = "assets/juventus.csv";
+        let output = "output.json";
+        let format = "json";
+        process_csv(input, output, format).unwrap();
+        let content = fs::read_to_string(output).unwrap();
+        let players: Vec<Value> = serde_json::from_str(&content).unwrap();
+        assert_eq!(players.len(), 27);
+        assert_eq!(players[0]["Name"], "Wojciech Szczesny");
+        assert_eq!(players[1]["Position"], "Goalkeeper");
+        assert_eq!(players[2]["DOB"], "Jan 28, 1978 (41)");
+    }
+
+    #[test]
+    fn test_process_csv_to_yaml() {
+        let input = "assets/juventus.csv";
+        let output = "output.yaml";
+        let format = "yaml";
+        process_csv(input, output, format).unwrap();
+        let content = fs::read_to_string(output).unwrap();
+        let players: Vec<Value> = serde_yaml::from_str(&content).unwrap();
+        assert_eq!(players.len(), 27);
+        assert_eq!(players[0]["Name"], "Wojciech Szczesny");
+        assert_eq!(players[1]["Position"], "Goalkeeper");
+        assert_eq!(players[2]["DOB"], "Jan 28, 1978 (41)");
+    }
+}

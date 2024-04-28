@@ -1,7 +1,10 @@
+mod base64;
 mod csv;
 mod genpass;
 
-use self::{csv::CsvOpts, genpass::GenPassOpts};
+use std::path::Path;
+
+pub use self::{base64::Base64Command, csv::CsvOpts, genpass::GenPassOpts};
 
 use clap::{Parser, Subcommand};
 
@@ -21,4 +24,16 @@ pub enum Commands {
     /// Generate a random password
     #[command(name = "genpass")]
     GenPass(GenPassOpts),
+
+    /// Encode or Decode a base64 string
+    #[command(subcommand, name = "base64")]
+    Base64(Base64Command),
+}
+
+fn validate_input_file(filename: &str) -> Result<String, String> {
+    if filename == "-" || Path::new(filename).exists() {
+        Ok(filename.to_string())
+    } else {
+        Err(format!("File not found: {}", filename))
+    }
 }
