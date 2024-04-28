@@ -3,6 +3,21 @@
 All notable changes to this project will be documented in this file. See [conventional commits](https://www.conventionalcommits.org/) for commit guidelines.
 
 ---
+## [0.3.0](https://github.com/okqin/rcli.git/compare/v0.2.0..v0.3.0) - 2024-04-28
+
+### Documentation
+
+- update changelog.md - ([91fbc28](https://github.com/okqin/rcli.git/commit/91fbc28f8f2cccb79427a5ebf376a2281cbb1732)) - okqin
+
+### Features
+
+- supports base64 encoding/decoding - ([299fc16](https://github.com/okqin/rcli.git/commit/299fc169b8a94a46a3bb57e029560a88e7db9bed)) - okqin
+
+### Refactoring
+
+- the code for cli parsing has been refactored - ([534c56e](https://github.com/okqin/rcli.git/commit/534c56eb238fb2e8ee95f23907366f7152439113)) - okqin
+
+---
 ## [0.2.0](https://github.com/okqin/rcli.git/compare/v0.1.0..v0.2.0) - 2024-04-24
 
 ### Features

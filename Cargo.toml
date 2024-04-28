@@ -1,6 +1,6 @@
 [package]
 name = "rcli"
-version = "0.2.0"
+version = "0.3.0"
 authors = ["Ji Qin"]
 publish = false
 edition = "2021"
