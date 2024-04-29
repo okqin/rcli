@@ -8,26 +8,15 @@ use super::validate_input_file;
 pub enum Base64Command {
     /// Base64 encode
     #[command(name = "encode")]
-    Encode(Base64EncodeOpts),
+    Encode(Base64Opts),
 
     /// Base64 decode
     #[command(name = "decode")]
-    Decode(Base64DecodeOpts),
+    Decode(Base64Opts),
 }
 
 #[derive(Debug, Args)]
-pub struct Base64EncodeOpts {
-    /// input a string or file to encode
-    #[arg(short, long, value_parser = validate_input_file, default_value = "-")]
-    pub input: String,
-
-    /// encode format, like: standard or url (default: standard)
-    #[arg(long, value_enum, default_value = "standard")]
-    pub format: AlphabetRange,
-}
-
-#[derive(Debug, Args)]
-pub struct Base64DecodeOpts {
+pub struct Base64Opts {
     /// input from stdin or file to decode/encode
     #[arg(short, long, value_parser = validate_input_file, default_value = "-")]
     pub input: String,
