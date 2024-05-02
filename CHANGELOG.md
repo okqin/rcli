@@ -3,12 +3,24 @@
 All notable changes to this project will be documented in this file. See [conventional commits](https://www.conventionalcommits.org/) for commit guidelines.
 
 ---
-## [unreleased]
+## [0.4.0](https://github.com/okqin/rcli/compare/v0.3.0..v0.4.0) - 2024-05-02
+
+### Documentation
+
+- updated changelog - ([a77003f](https://github.com/okqin/rcli/commit/a77003f38b6cdfe811a8a33df4504a91c52f1edd)) - okqin
+
+### Features
+
+- add text signing and verification, support for Blake3 and Ed25519 - ([0d9b530](https://github.com/okqin/rcli/commit/0d9b5307dc6616586f0c20d9bdd1c67967bf6006)) - okqin
 
 ### Miscellaneous Chores
 
 - update changelog - ([a50540e](https://github.com/okqin/rcli/commit/a50540e3363ec67a0413e7ff8e8d38b149554067)) - okqin
 - updated git-cliff repo url - ([3c8c956](https://github.com/okqin/rcli/commit/3c8c956ff6d20ec774a74c7f62e70fcf23c1b0e2)) - okqin
+
+### Refactoring
+
+- base64 options - ([f040bd4](https://github.com/okqin/rcli/commit/f040bd452ba9bba94d4aaeda99f86267e5abebf6)) - okqin
 
 ---
 ## [0.3.0](https://github.com/okqin/rcli/compare/v0.2.0..v0.3.0) - 2024-04-28
