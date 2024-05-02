@@ -2,12 +2,12 @@ use std::fmt;
 
 use clap::{Args, ValueEnum};
 
-use super::validate_input_file;
+use super::validate_file;
 
 #[derive(Debug, Args)]
 pub struct CsvOpts {
     /// Input CSV file path
-    #[arg(short, long, value_parser = validate_input_file)]
+    #[arg(short, long, value_parser = validate_file)]
     pub input: String,
 
     /// Output file path

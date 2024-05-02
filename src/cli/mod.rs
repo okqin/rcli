@@ -1,10 +1,13 @@
 mod base64;
 mod csv;
 mod genpass;
+mod text;
 
-use std::path::Path;
+use std::path::{Path, PathBuf};
 
-pub use self::{base64::Base64Command, csv::CsvOpts, genpass::GenPassOpts};
+pub use self::{
+    base64::Base64Command, csv::CsvOpts, genpass::GenPassOpts, text::SignFormat, text::TextCommand,
+};
 
 use clap::{Parser, Subcommand};
 
@@ -17,7 +20,7 @@ pub struct Cli {
 
 #[derive(Debug, Subcommand)]
 pub enum Commands {
-    /// Show Csv or Convert CSV to other formats
+    /// Convert csv to other formats
     #[command(name = "csv")]
     Csv(CsvOpts),
 
@@ -25,15 +28,28 @@ pub enum Commands {
     #[command(name = "genpass")]
     GenPass(GenPassOpts),
 
-    /// Encode or Decode a base64 string
+    /// Use base64 for encoding or decoding
     #[command(subcommand, name = "base64")]
     Base64(Base64Command),
+
+    /// Text signing or signature verification.
+    #[command(subcommand, name = "text")]
+    Text(TextCommand),
 }
 
-fn validate_input_file(filename: &str) -> Result<String, String> {
+fn validate_file(filename: &str) -> Result<String, String> {
     if filename == "-" || Path::new(filename).exists() {
         Ok(filename.to_string())
     } else {
         Err(format!("File not found: {}", filename))
+    }
+}
+
+fn validate_path(path: &str) -> Result<PathBuf, String> {
+    let p = PathBuf::from(path);
+    if p.exists() && p.is_dir() {
+        Ok(p)
+    } else {
+        Err(format!("Path not found: {}", path))
     }
 }

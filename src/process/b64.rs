@@ -1,15 +1,11 @@
-use std::{
-    fs,
-    io::{self, Read},
-    path::Path,
-};
-
 use anyhow::Result;
 use base64::{
     alphabet::{STANDARD, URL_SAFE},
     engine::{DecodePaddingMode, GeneralPurpose, GeneralPurposeConfig},
     Engine,
 };
+
+use crate::get_reader;
 
 pub const CUSTOM_PAD: GeneralPurposeConfig =
     GeneralPurposeConfig::new().with_decode_padding_mode(DecodePaddingMode::Indifferent);
@@ -33,7 +29,7 @@ pub fn process_encode(input: &str, format: &str) -> Result<String> {
     Ok(result)
 }
 
-pub fn process_decode(input: &str, format: &str) -> Result<String> {
+pub fn process_decode(input: &str, format: &str) -> Result<Vec<u8>> {
     let mut reader = get_reader(input)?;
     let mut buf = String::new();
     reader.read_to_string(&mut buf)?;
@@ -42,27 +38,7 @@ pub fn process_decode(input: &str, format: &str) -> Result<String> {
         "url" => URL_SAFE_ENGINE.decode(buf)?,
         _ => STANDARD_ENGINE.decode(buf)?,
     };
-
-    match String::from_utf8(decoded.clone()) {
-        Ok(result) => Ok(result),
-        Err(_) => {
-            let file = Path::new("base64_decode.output");
-            fs::write(file, decoded)?;
-            Ok(format!(
-                "The decode data is not a string, please check the file {}",
-                file.display()
-            ))
-        }
-    }
-}
-
-fn get_reader(input: &str) -> Result<Box<dyn Read>> {
-    let reader: Box<dyn Read> = if input == "-" {
-        Box::new(io::stdin())
-    } else {
-        Box::new(fs::File::open(input)?)
-    };
-    Ok(reader)
+    Ok(decoded)
 }
 
 #[cfg(test)]
@@ -90,7 +66,7 @@ mod tests {
         let input = "assets/encode.b64";
         let format = "standard";
         let decoded = process_decode(input, format).unwrap();
-        assert_eq!(decoded, "This is a base64 encoding text.");
+        assert_eq!(decoded, b"This is a base64 encoding text.");
     }
 
     #[test]
@@ -98,17 +74,6 @@ mod tests {
         let input = "assets/encode.b64";
         let format = "url";
         let decoded = process_decode(input, format).unwrap();
-        assert_eq!(decoded, "This is a base64 encoding text.");
-    }
-
-    #[test]
-    fn test_process_decode_not_string() {
-        let input = "assets/encode-png.b64";
-        let format = "standard";
-        let decoded = process_decode(input, format).unwrap();
-        assert_eq!(
-            decoded,
-            "The decode data is not a string, please check the file base64_decode.output"
-        );
+        assert_eq!(decoded, b"This is a base64 encoding text.");
     }
 }

@@ -2,7 +2,7 @@ use std::fmt;
 
 use clap::{Args, Subcommand, ValueEnum};
 
-use super::validate_input_file;
+use super::validate_file;
 
 #[derive(Debug, Subcommand)]
 pub enum Base64Command {
@@ -18,7 +18,7 @@ pub enum Base64Command {
 #[derive(Debug, Args)]
 pub struct Base64Opts {
     /// input from stdin or file to decode/encode
-    #[arg(short, long, value_parser = validate_input_file, default_value = "-")]
+    #[arg(short, long, value_parser = validate_file, default_value = "-")]
     pub input: String,
 
     /// base64 format, like: standard or url (default: standard)
