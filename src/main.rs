@@ -5,12 +5,14 @@ use clap::Parser;
 use zxcvbn::zxcvbn;
 
 use rcli::{
-    process_csv, process_decode, process_encode, process_genpass, process_text_generate_key,
-    process_text_sign, process_text_verify, Base64Command, Cli, Commands, SignFormat, TextCommand,
-    URL_SAFE_ENGINE,
+    process_csv, process_decode, process_encode, process_genpass, process_http_serve,
+    process_text_generate_key, process_text_sign, process_text_verify, Base64Command, Cli,
+    Commands, HttpCommand, SignFormat, TextCommand, URL_SAFE_ENGINE,
 };
 
-fn main() -> anyhow::Result<()> {
+#[tokio::main]
+async fn main() -> anyhow::Result<()> {
+    tracing_subscriber::fmt::init();
     let cli = Cli::parse();
     match cli.cmd {
         Commands::Csv(opts) => {
@@ -85,6 +87,14 @@ fn main() -> anyhow::Result<()> {
                         fs::write(path.join("ed25519.pk"), key[1])?;
                     }
                 }
+            }
+        },
+        Commands::Http(subcommand) => match subcommand {
+            HttpCommand::Serve(opts) => {
+                process_http_serve(opts.path, &opts.addr, opts.port, opts.daemon).await?;
+            }
+            HttpCommand::Stop(_opts) => {
+                // process_http_stop(&opts.addr, opts.port)?;
             }
         },
     }

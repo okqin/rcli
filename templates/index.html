@@ -1,0 +1,62 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>File Server Directory</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 20px;
+        }
+        h1 {
+            text-align: left;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+        th, td {
+            border: 1px solid #ddd;
+            padding: 8px;
+            text-align: left;
+        }
+        th {
+            background-color: #f2f2f2;
+        }
+        .icon {
+            width: 20px;
+            height: auto;
+            margin-right: 5px;
+        }
+        .back-button {
+            margin-bottom: 20px;
+        }
+    </style>
+</head>
+<body>
+    <h1>File Server Directory</h1>
+    <a href="{{ parent }}">
+        <button class="back-button">Parent Directory</button>
+    </a>
+    <table>
+        <thead>
+            <tr>
+                <th>Name</th>
+                <th>Last Modified</th>
+                <th>Size</th>
+            </tr>
+        </thead>
+        <tbody>
+            {%- for entry in entries %}
+            <tr>
+                <td><img src="{{ entry.icon }}" alt="{{ entry.type }}" class="icon"><a href="{{ entry.path }}">{{ entry.name }}</a></td>
+                <td>{{ entry.update }}</td>
+                <td>{{ entry.size }}</td>
+            </tr>
+            {%- endfor %}
+        </tbody>
+    </table>
+</body>
+</html>

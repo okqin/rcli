@@ -1,12 +1,18 @@
 mod base64;
 mod csv;
 mod genpass;
+mod http;
 mod text;
 
-use std::path::{Path, PathBuf};
+use std::{
+    net::IpAddr,
+    ops::RangeInclusive,
+    path::{Path, PathBuf},
+};
 
 pub use self::{
-    base64::Base64Command, csv::CsvOpts, genpass::GenPassOpts, text::SignFormat, text::TextCommand,
+    base64::Base64Command, csv::CsvOpts, genpass::GenPassOpts, http::HttpCommand, text::SignFormat,
+    text::TextCommand,
 };
 
 use clap::{Parser, Subcommand};
@@ -35,6 +41,10 @@ pub enum Commands {
     /// Text signing or signature verification.
     #[command(subcommand, name = "text")]
     Text(TextCommand),
+
+    /// Start a simple file http server
+    #[command(subcommand, name = "http")]
+    Http(HttpCommand),
 }
 
 fn validate_file(filename: &str) -> Result<String, String> {
@@ -52,4 +62,26 @@ fn validate_path(path: &str) -> Result<PathBuf, String> {
     } else {
         Err(format!("Path not found: {}", path))
     }
+}
+
+const PORT_RANGE: RangeInclusive<usize> = 1..=65535;
+
+fn validate_port(s: &str) -> Result<u16, String> {
+    let port: usize = s
+        .parse()
+        .map_err(|_| format!("`{s}` isn't a port number"))?;
+    if PORT_RANGE.contains(&port) {
+        Ok(port as u16)
+    } else {
+        Err(format!(
+            "port not in range {}-{}",
+            PORT_RANGE.start(),
+            PORT_RANGE.end()
+        ))
+    }
+}
+
+fn validate_addr(s: &str) -> Result<IpAddr, String> {
+    s.parse()
+        .map_err(|_| format!("`{}` isn't a valid IP address", s))
 }
