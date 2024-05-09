@@ -3,6 +3,17 @@
 All notable changes to this project will be documented in this file. See [conventional commits](https://www.conventionalcommits.org/) for commit guidelines.
 
 ---
+## [0.5.0](https://github.com/okqin/rcli/compare/v0.4.0..v0.5.0) - 2024-05-09
+
+### Documentation
+
+- updated changelog - ([fd17194](https://github.com/okqin/rcli/commit/fd17194b1827794a879898fc0c3d8ccf4d3de8de)) - okqin
+
+### Features
+
+- add http service to support file server - ([39aad03](https://github.com/okqin/rcli/commit/39aad0300d80c9b0b4fb3afa28c5f4551187e8d3)) - okqin
+
+---
 ## [0.4.0](https://github.com/okqin/rcli/compare/v0.3.0..v0.4.0) - 2024-05-02
 
 ### Documentation
