@@ -2,6 +2,8 @@ use std::{net::IpAddr, path::PathBuf};
 
 use clap::{Args, Subcommand};
 
+use crate::{process_http_serve, CmdExecutor};
+
 use super::{validate_addr, validate_path, validate_port};
 
 #[derive(Debug, Subcommand)]
@@ -9,10 +11,9 @@ pub enum HttpCommand {
     /// Start a http server
     #[command(name = "serve")]
     Serve(HttpServerOpts),
-
-    /// Stop a http server
-    #[command(name = "stop")]
-    Stop(HttpServerOpts),
+    // /// Stop a http server
+    // #[command(name = "stop")]
+    // Stop(HttpServerOpts),
 }
 
 #[derive(Debug, Args)]
@@ -32,4 +33,21 @@ pub struct HttpServerOpts {
     /// whether to start as a daemon
     #[arg(short, long)]
     pub daemon: bool,
+}
+
+impl CmdExecutor for HttpServerOpts {
+    async fn execute(self) -> anyhow::Result<()> {
+        process_http_serve(self.path, &self.addr, self.port, self.daemon).await?;
+        Ok(())
+    }
+}
+
+impl CmdExecutor for HttpCommand {
+    async fn execute(self) -> anyhow::Result<()> {
+        match self {
+            HttpCommand::Serve(opts) => opts.execute().await?,
+            // HttpCommand::Stop(opts) => opts.execute().await,
+        }
+        Ok(())
+    }
 }

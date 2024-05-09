@@ -1,8 +1,7 @@
-use std::fs;
-
 use csv::Reader;
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
+use std::fs;
 
 #[derive(Debug, Deserialize, Serialize)]
 #[serde(rename_all = "PascalCase")]

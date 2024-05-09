@@ -10,6 +10,8 @@ use std::{
     path::{Path, PathBuf},
 };
 
+use crate::CmdExecutor;
+
 pub use self::{
     base64::Base64Command, csv::CsvOpts, genpass::GenPassOpts, http::HttpCommand, text::SignFormat,
     text::TextCommand,
@@ -45,6 +47,19 @@ pub enum Commands {
     /// Start a simple file http server
     #[command(subcommand, name = "http")]
     Http(HttpCommand),
+}
+
+impl CmdExecutor for Commands {
+    async fn execute(self) -> anyhow::Result<()> {
+        match self {
+            Commands::Csv(opts) => opts.execute().await?,
+            Commands::GenPass(opts) => opts.execute().await?,
+            Commands::Base64(subcommand) => subcommand.execute().await?,
+            Commands::Text(subcommand) => subcommand.execute().await?,
+            Commands::Http(subcommand) => subcommand.execute().await?,
+        }
+        Ok(())
+    }
 }
 
 fn validate_file(filename: &str) -> Result<String, String> {

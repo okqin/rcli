@@ -1,8 +1,7 @@
-use std::fmt;
-
-use clap::{Args, ValueEnum};
-
 use super::validate_file;
+use crate::{process_csv, CmdExecutor};
+use clap::{Args, ValueEnum};
+use std::fmt;
 
 #[derive(Debug, Args)]
 pub struct CsvOpts {
@@ -34,6 +33,17 @@ pub enum OutputFormat {
 
     /// output yaml format
     Yaml,
+}
+
+impl CmdExecutor for CsvOpts {
+    async fn execute(self) -> anyhow::Result<()> {
+        let output = if let Some(output) = self.output {
+            output
+        } else {
+            format!("output.{}", self.format)
+        };
+        process_csv(&self.input, &output, &self.format.to_string())
+    }
 }
 
 impl fmt::Display for OutputFormat {

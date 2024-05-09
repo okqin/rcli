@@ -1,8 +1,7 @@
-use std::{fs, io::Read, path::Path};
-
 use anyhow::{anyhow, Result};
 use ed25519_dalek::{Signature, Signer, SigningKey, Verifier, VerifyingKey};
 use rand::rngs::OsRng;
+use std::{fs, io::Read, path::Path};
 
 use crate::{get_reader, process_genpass};
 

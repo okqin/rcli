@@ -1,4 +1,6 @@
+use crate::{process_genpass, CmdExecutor};
 use clap::Args;
+use zxcvbn::zxcvbn;
 
 #[derive(Debug, Args)]
 pub struct GenPassOpts {
@@ -21,4 +23,23 @@ pub struct GenPassOpts {
     /// Whether to include symbols
     #[arg(long, default_value_t = true)]
     pub symbol: bool,
+}
+
+impl CmdExecutor for GenPassOpts {
+    async fn execute(self) -> anyhow::Result<()> {
+        let pass = process_genpass(
+            self.length,
+            self.lower,
+            self.upper,
+            self.digits,
+            self.symbol,
+        )?;
+        unsafe {
+            let password = String::from_utf8_unchecked(pass);
+            println!("{}", password);
+            let estimate = zxcvbn(&password, &[])?;
+            eprintln!("Estimated strength: {}\n", estimate.score());
+        }
+        Ok(())
+    }
 }

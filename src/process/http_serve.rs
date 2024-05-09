@@ -44,6 +44,7 @@ pub async fn process_http_serve(
     port: u16,
     _daemon: bool,
 ) -> Result<()> {
+    tracing_subscriber::fmt::init();
     info!("Starting http server...");
     let shared_state = Arc::new(HttpServeState { path: path.clone() });
     let app = Router::new()

@@ -1,8 +1,10 @@
-use std::{fmt, path::PathBuf};
-
-use clap::{Args, Subcommand, ValueEnum};
-
 use super::{validate_file, validate_path};
+use crate::{
+    process_text_generate_key, process_text_sign, process_text_verify, CmdExecutor, URL_SAFE_ENGINE,
+};
+use base64::Engine;
+use clap::{Args, Subcommand, ValueEnum};
+use std::{fmt, fs, path::PathBuf};
 
 #[derive(Debug, Subcommand)]
 pub enum TextCommand {
@@ -71,6 +73,56 @@ pub enum SignFormat {
 
     /// ed25519 signature
     Ed25519,
+}
+
+impl CmdExecutor for TextSignOpts {
+    async fn execute(self) -> anyhow::Result<()> {
+        let signature = process_text_sign(&self.message, &self.key, &self.format.to_string())?;
+        let signature = URL_SAFE_ENGINE.encode(signature);
+        println!("{}", signature);
+        Ok(())
+    }
+}
+
+impl CmdExecutor for TextVerifyOpts {
+    async fn execute(self) -> anyhow::Result<()> {
+        let result = process_text_verify(
+            &self.message,
+            &self.key,
+            &self.format.to_string(),
+            self.signature.as_bytes(),
+        )?;
+        println!("{}", result);
+        Ok(())
+    }
+}
+
+impl CmdExecutor for TextGenerateKeyOpts {
+    async fn execute(self) -> anyhow::Result<()> {
+        let key = process_text_generate_key(&self.format.to_string())?;
+        let path = self.output;
+        match self.format {
+            SignFormat::Blake3 => {
+                fs::write(path.join("blake3.txt"), key[0])?;
+            }
+            SignFormat::Ed25519 => {
+                fs::write(path.join("ed25519.sk"), key[0])?;
+                fs::write(path.join("ed25519.pk"), key[1])?;
+            }
+        }
+        Ok(())
+    }
+}
+
+impl CmdExecutor for TextCommand {
+    async fn execute(self) -> anyhow::Result<()> {
+        match self {
+            TextCommand::Sign(opts) => opts.execute().await?,
+            TextCommand::Verify(opts) => opts.execute().await?,
+            TextCommand::GenerateKey(opts) => opts.execute().await?,
+        }
+        Ok(())
+    }
 }
 
 impl fmt::Display for SignFormat {
