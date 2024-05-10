@@ -1,6 +1,6 @@
 use anyhow::Result;
 use std::{
-    fs,
+    fs::File,
     io::{self, Read},
 };
 
@@ -8,7 +8,14 @@ pub fn get_reader(input: &str) -> Result<Box<dyn Read>> {
     let reader: Box<dyn Read> = if input == "-" {
         Box::new(io::stdin())
     } else {
-        Box::new(fs::File::open(input)?)
+        Box::new(File::open(input)?)
     };
     Ok(reader)
+}
+
+pub fn read_contents(input: &str) -> Result<Vec<u8>> {
+    let mut reader = get_reader(input)?;
+    let mut buf = Vec::new();
+    reader.read_to_end(&mut buf)?;
+    Ok(buf)
 }

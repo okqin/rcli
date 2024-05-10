@@ -1,5 +1,8 @@
 use super::{validate_file, validate_path, CmdExecutor};
-use crate::{process_text_generate_key, process_text_sign, process_text_verify, URL_SAFE_ENGINE};
+use crate::{
+    get_reader, process_text_generate_key, process_text_sign, process_text_verify, read_contents,
+    URL_SAFE_ENGINE,
+};
 use base64::Engine;
 use clap::{Args, Subcommand, ValueEnum};
 use enum_dispatch::enum_dispatch;
@@ -77,18 +80,22 @@ pub enum SignFormat {
 
 impl CmdExecutor for TextSignOpts {
     async fn execute(self) -> anyhow::Result<()> {
-        let signature = process_text_sign(&self.message, &self.key, &self.format.to_string())?;
-        let signature = URL_SAFE_ENGINE.encode(signature);
-        println!("{}", signature);
+        let mut message = get_reader(&self.message)?;
+        let key = read_contents(&self.key)?;
+        let signature = process_text_sign(&mut message, &key, &self.format.to_string())?;
+        let encoded = URL_SAFE_ENGINE.encode(signature);
+        println!("{}", encoded);
         Ok(())
     }
 }
 
 impl CmdExecutor for TextVerifyOpts {
     async fn execute(self) -> anyhow::Result<()> {
+        let mut message = get_reader(&self.message)?;
+        let key = read_contents(&self.key)?;
         let result = process_text_verify(
-            &self.message,
-            &self.key,
+            &mut message,
+            &key,
             &self.format.to_string(),
             self.signature.as_bytes(),
         )?;
