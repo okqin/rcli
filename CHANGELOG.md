@@ -3,6 +3,18 @@
 All notable changes to this project will be documented in this file. See [conventional commits](https://www.conventionalcommits.org/) for commit guidelines.
 
 ---
+## [0.5.1](https://github.com/okqin/rcli/compare/v0.5.0..v0.5.1) - 2024-05-10
+
+### Documentation
+
+- updated changelog - ([beba5e4](https://github.com/okqin/rcli/commit/beba5e440a68b2585c4ba6ab0c22857173570731)) - okqin
+
+### Refactoring
+
+- refactoring the CLI parsing logic with the CmdExecutor trait. - ([680eb49](https://github.com/okqin/rcli/commit/680eb4976758824eff88c16267a302c368f4ee6c)) - okqin
+- use enum-dispatch to eliminate duplicate template code. - ([daadc8b](https://github.com/okqin/rcli/commit/daadc8b7bfb88047163a39a14bbb7d7fa27fb446)) - okqin
+
+---
 ## [0.5.0](https://github.com/okqin/rcli/compare/v0.4.0..v0.5.0) - 2024-05-09
 
 ### Documentation
