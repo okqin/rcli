@@ -1,6 +1,6 @@
 [package]
 name = "rcli"
-version = "0.5.0"
+version = "0.5.1"
 authors = ["Ji Qin"]
 publish = false
 edition = "2021"
@@ -14,6 +14,7 @@ chrono = "0.4.38"
 clap = { version = "4.5", features = ["derive"] }
 csv = "1.3"
 ed25519-dalek = { version = "2.1", features = ["rand_core"] }
+enum_dispatch = "0.3"
 http = "1.1.0"
 minijinja = "2.0"
 rand = "0.8"

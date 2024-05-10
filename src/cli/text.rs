@@ -1,11 +1,11 @@
-use super::{validate_file, validate_path};
-use crate::{
-    process_text_generate_key, process_text_sign, process_text_verify, CmdExecutor, URL_SAFE_ENGINE,
-};
+use super::{validate_file, validate_path, CmdExecutor};
+use crate::{process_text_generate_key, process_text_sign, process_text_verify, URL_SAFE_ENGINE};
 use base64::Engine;
 use clap::{Args, Subcommand, ValueEnum};
+use enum_dispatch::enum_dispatch;
 use std::{fmt, fs, path::PathBuf};
 
+#[enum_dispatch(CmdExecutor)]
 #[derive(Debug, Subcommand)]
 pub enum TextCommand {
     /// Sign a message with a key file
@@ -109,17 +109,6 @@ impl CmdExecutor for TextGenerateKeyOpts {
                 fs::write(path.join("ed25519.sk"), key[0])?;
                 fs::write(path.join("ed25519.pk"), key[1])?;
             }
-        }
-        Ok(())
-    }
-}
-
-impl CmdExecutor for TextCommand {
-    async fn execute(self) -> anyhow::Result<()> {
-        match self {
-            TextCommand::Sign(opts) => opts.execute().await?,
-            TextCommand::Verify(opts) => opts.execute().await?,
-            TextCommand::GenerateKey(opts) => opts.execute().await?,
         }
         Ok(())
     }

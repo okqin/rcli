@@ -4,20 +4,14 @@ mod genpass;
 mod http;
 mod text;
 
+pub use self::{base64::*, csv::*, genpass::*, http::*, text::*};
+use clap::{Parser, Subcommand};
+use enum_dispatch::enum_dispatch;
 use std::{
     net::IpAddr,
     ops::RangeInclusive,
     path::{Path, PathBuf},
 };
-
-use crate::CmdExecutor;
-
-pub use self::{
-    base64::Base64Command, csv::CsvOpts, genpass::GenPassOpts, http::HttpCommand, text::SignFormat,
-    text::TextCommand,
-};
-
-use clap::{Parser, Subcommand};
 
 #[derive(Debug, Parser)]
 #[command(name = "rcli", version, author, about, long_about = None)]
@@ -26,6 +20,7 @@ pub struct Cli {
     pub cmd: Commands,
 }
 
+#[enum_dispatch(CmdExecutor)]
 #[derive(Debug, Subcommand)]
 pub enum Commands {
     /// Convert csv to other formats
@@ -49,17 +44,10 @@ pub enum Commands {
     Http(HttpCommand),
 }
 
-impl CmdExecutor for Commands {
-    async fn execute(self) -> anyhow::Result<()> {
-        match self {
-            Commands::Csv(opts) => opts.execute().await?,
-            Commands::GenPass(opts) => opts.execute().await?,
-            Commands::Base64(subcommand) => subcommand.execute().await?,
-            Commands::Text(subcommand) => subcommand.execute().await?,
-            Commands::Http(subcommand) => subcommand.execute().await?,
-        }
-        Ok(())
-    }
+#[allow(async_fn_in_trait)]
+#[enum_dispatch]
+pub trait CmdExecutor {
+    async fn execute(self) -> anyhow::Result<()>;
 }
 
 fn validate_file(filename: &str) -> Result<String, String> {

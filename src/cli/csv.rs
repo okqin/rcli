@@ -1,5 +1,5 @@
-use super::validate_file;
-use crate::{process_csv, CmdExecutor};
+use super::{validate_file, CmdExecutor};
+use crate::process_csv;
 use clap::{Args, ValueEnum};
 use std::fmt;
 

@@ -1,11 +1,10 @@
+use super::{validate_addr, validate_path, validate_port, CmdExecutor};
+use crate::process_http_serve;
+use clap::{Args, Subcommand};
+use enum_dispatch::enum_dispatch;
 use std::{net::IpAddr, path::PathBuf};
 
-use clap::{Args, Subcommand};
-
-use crate::{process_http_serve, CmdExecutor};
-
-use super::{validate_addr, validate_path, validate_port};
-
+#[enum_dispatch(CmdExecutor)]
 #[derive(Debug, Subcommand)]
 pub enum HttpCommand {
     /// Start a http server
@@ -38,16 +37,6 @@ pub struct HttpServerOpts {
 impl CmdExecutor for HttpServerOpts {
     async fn execute(self) -> anyhow::Result<()> {
         process_http_serve(self.path, &self.addr, self.port, self.daemon).await?;
-        Ok(())
-    }
-}
-
-impl CmdExecutor for HttpCommand {
-    async fn execute(self) -> anyhow::Result<()> {
-        match self {
-            HttpCommand::Serve(opts) => opts.execute().await?,
-            // HttpCommand::Stop(opts) => opts.execute().await,
-        }
         Ok(())
     }
 }
