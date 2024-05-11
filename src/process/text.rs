@@ -1,5 +1,9 @@
 use crate::process_genpass;
 use anyhow::{anyhow, Result};
+use chacha20poly1305::{
+    aead::{Aead, AeadCore, KeyInit},
+    ChaCha20Poly1305, Key, Nonce,
+};
 use ed25519_dalek::{Signature, Signer, SigningKey, Verifier, VerifyingKey};
 use rand::rngs::OsRng;
 use std::io::Read;
@@ -10,6 +14,14 @@ pub trait TextSigner {
 
 pub trait TextVerifier {
     fn verify(&self, reader: &mut dyn Read, signature: &[u8]) -> Result<bool>;
+}
+
+pub trait TextEncryptor {
+    fn encrypt(&self, nonce: &[u8], plaintext: &[u8]) -> Result<Vec<u8>>;
+}
+
+pub trait TextDecrypter {
+    fn decrypt(&self, nonce: &[u8], ciphertext: &[u8]) -> Result<Vec<u8>>;
 }
 
 pub struct Blake3 {
@@ -23,6 +35,8 @@ pub struct Ed25519Signer {
 pub struct Ed25519Verifier {
     key: VerifyingKey,
 }
+
+pub struct MyChaCha20Poly1305(ChaCha20Poly1305);
 
 impl TextSigner for Blake3 {
     fn sign(&self, reader: &mut dyn Read) -> Result<Vec<u8>> {
@@ -56,6 +70,26 @@ impl TextVerifier for Ed25519Verifier {
         reader.read_to_end(&mut buf)?;
         let signature = Signature::try_from(signature)?;
         Ok(self.key.verify(&buf, &signature).is_ok())
+    }
+}
+
+impl TextEncryptor for MyChaCha20Poly1305 {
+    fn encrypt(&self, nonce: &[u8], plaintext: &[u8]) -> Result<Vec<u8>> {
+        let nonce = Nonce::from_slice(nonce);
+        match self.0.encrypt(nonce, plaintext) {
+            Ok(ciphertext) => Ok(ciphertext),
+            Err(e) => Err(anyhow!("encryption failed: {}", e)),
+        }
+    }
+}
+
+impl TextDecrypter for MyChaCha20Poly1305 {
+    fn decrypt(&self, nonce: &[u8], ciphertext: &[u8]) -> Result<Vec<u8>> {
+        let nonce = Nonce::from_slice(nonce);
+        match self.0.decrypt(nonce, ciphertext) {
+            Ok(plaintext) => Ok(plaintext),
+            Err(e) => Err(anyhow!("decryption failed: {}", e)),
+        }
     }
 }
 
@@ -114,6 +148,13 @@ impl Ed25519Verifier {
     }
 }
 
+impl MyChaCha20Poly1305 {
+    fn new(key: &[u8]) -> Self {
+        let key = Key::from_slice(key);
+        Self(ChaCha20Poly1305::new(key))
+    }
+}
+
 pub fn process_text_sign(message: &mut dyn Read, key: &[u8], format: &str) -> Result<Vec<u8>> {
     let signature = match format {
         "blake3" => {
@@ -157,6 +198,32 @@ pub fn process_text_generate_key(format: &str) -> Result<Vec<[u8; 32]>> {
     }
 }
 
+pub fn process_text_encrypt(message: &[u8], key: &[u8], format: &str) -> Result<Vec<u8>> {
+    let encrypted = match format {
+        "chacha20poly1305" => {
+            let cipher = MyChaCha20Poly1305::new(key);
+            let nonce = ChaCha20Poly1305::generate_nonce(&mut OsRng);
+            let mut ciphertext = cipher.encrypt(&nonce, message.as_ref())?;
+            ciphertext.extend_from_slice(&nonce);
+            ciphertext
+        }
+        _ => return Err(anyhow::anyhow!("unsupported format: {}", format)),
+    };
+    Ok(encrypted)
+}
+
+pub fn process_text_decrypt(message: &[u8], key: &[u8], format: &str) -> Result<Vec<u8>> {
+    let decrypted = match format {
+        "chacha20poly1305" => {
+            let (ciphertext, nonce) = message.split_at(message.len() - 12);
+            let cipher = MyChaCha20Poly1305::new(key);
+            cipher.decrypt(nonce, ciphertext)?
+        }
+        _ => return Err(anyhow::anyhow!("unsupported format: {}", format)),
+    };
+    Ok(decrypted)
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -178,5 +245,14 @@ mod tests {
         let signature = sign_key.sign(&mut &message[..]).unwrap();
         let verify_key = Ed25519Verifier::try_new(key[1]).unwrap();
         assert!(verify_key.verify(&mut &message[..], &signature).unwrap());
+    }
+
+    #[test]
+    fn test_chacha20poly1305_encrypt_decrypt() {
+        let message = b"hello world!";
+        let key = process_genpass(32, true, true, true, true).unwrap();
+        let encrypt = process_text_encrypt(message, &key, "chacha20poly1305").unwrap();
+        let decrypt = process_text_decrypt(&encrypt, &key, "chacha20poly1305").unwrap();
+        assert_eq!(message, decrypt.as_slice());
     }
 }
