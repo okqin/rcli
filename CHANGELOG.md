@@ -3,6 +3,21 @@
 All notable changes to this project will be documented in this file. See [conventional commits](https://www.conventionalcommits.org/) for commit guidelines.
 
 ---
+## [0.6.0](https://github.com/okqin/rcli/compare/v0.5.1..v0.6.0) - 2024-05-11
+
+### Documentation
+
+- updated changelog - ([be79edb](https://github.com/okqin/rcli/commit/be79edbd75ea963100d946ee7d6d9d853766a817)) - okqin
+
+### Features
+
+- add chacha20poly1305 cipher - ([e17b676](https://github.com/okqin/rcli/commit/e17b67619480563a0ceb73f8ac4ff5e6b118b634)) - okqin
+
+### Refactoring
+
+- refactored the text signature-related code - ([a2360fe](https://github.com/okqin/rcli/commit/a2360fea91853323b77202444bf027215805576b)) - okqin
+
+---
 ## [0.5.1](https://github.com/okqin/rcli/compare/v0.5.0..v0.5.1) - 2024-05-10
 
 ### Documentation
