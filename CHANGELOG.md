@@ -3,6 +3,17 @@
 All notable changes to this project will be documented in this file. See [conventional commits](https://www.conventionalcommits.org/) for commit guidelines.
 
 ---
+## [0.7.0](https://github.com/okqin/rcli/compare/v0.6.0..v0.7.0) - 2024-05-13
+
+### Documentation
+
+- updated changelog - ([8061ec7](https://github.com/okqin/rcli/commit/8061ec7abc17d2bd42154eeb304bceb8d5646c16)) - okqin
+
+### Features
+
+- supports JWT signing and verification - ([a34ad00](https://github.com/okqin/rcli/commit/a34ad00ce8b888efde2f858eca442209392143a7)) - okqin
+
+---
 ## [0.6.0](https://github.com/okqin/rcli/compare/v0.5.1..v0.6.0) - 2024-05-11
 
 ### Documentation
