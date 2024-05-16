@@ -37,7 +37,7 @@
 </head>
 <body>
     <h1>File Server Directory</h1>
-    <a href="{{ parent }}">
+    <a href="../">
         <button class="back-button">Parent Directory</button>
     </a>
     <table>
@@ -51,7 +51,7 @@
         <tbody>
             {%- for entry in entries %}
             <tr>
-                <td><img src="{{ entry.icon }}" alt="{{ entry.type }}" class="icon"><a href="{{ entry.path }}">{{ entry.name }}</a></td>
+                <td><img src="/{{ entry.icon }}" alt="{{ entry.type }}" class="icon"><a href="{{ entry.path }}">{{ entry.name }}</a></td>
                 <td>{{ entry.update }}</td>
                 <td>{{ entry.size }}</td>
             </tr>

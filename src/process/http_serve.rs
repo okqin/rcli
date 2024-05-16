@@ -1,6 +1,6 @@
 use anyhow::Result;
 use axum::{
-    extract::{Path, Request, State},
+    extract::{OriginalUri, Request, State},
     http::StatusCode,
     response::{Html, IntoResponse, Redirect, Response},
     routing::get,
@@ -8,15 +8,16 @@ use axum::{
 };
 use chrono::{DateTime, Utc};
 use minijinja::Environment;
+use percent_encoding::percent_decode;
 use serde::Serialize;
 use std::{
     net::{IpAddr, SocketAddr},
-    path::PathBuf,
+    path::{Component, Path, PathBuf},
     sync::Arc,
 };
 use tokio::fs;
 use tower_http::{services::ServeDir, trace::TraceLayer};
-use tracing::{error, info};
+use tracing::{debug, error, info};
 
 struct HttpServeState {
     path: PathBuf,
@@ -24,7 +25,6 @@ struct HttpServeState {
 
 #[derive(Serialize)]
 struct DirList {
-    parent: String,
     entries: Vec<DirEntry>,
 }
 
@@ -47,9 +47,17 @@ pub async fn process_http_serve(
     tracing_subscriber::fmt::init();
     info!("Starting http server...");
     let shared_state = Arc::new(HttpServeState { path: path.clone() });
-    let app = Router::new()
+
+    // Create a router for file service handler.
+    // Note that the path must include a '/' and also follow the '/*key' pattern.
+    let file_app = Router::new()
         .route("/", get(file_service))
-        .route("/*key", get(file_service))
+        .route("/*key", get(file_service));
+
+    // Customize the path here and integrate it with file_app.
+    // Note that it needs to end with a slash.
+    let app = Router::new()
+        .nest("/", file_app)
         .layer(TraceLayer::new_for_http())
         .with_state(shared_state);
     let addr = SocketAddr::new(*addr, port);
@@ -59,38 +67,41 @@ pub async fn process_http_serve(
     Ok(())
 }
 
-async fn file_service(
-    State(state): State<Arc<HttpServeState>>,
-    path: Option<Path<PathBuf>>,
-    req: Request,
-) -> Response {
-    // check the uri path
-    let path = path.map(|p| p.0).unwrap_or_else(|| PathBuf::from(""));
+async fn file_service(State(state): State<Arc<HttpServeState>>, req: Request) -> Response {
+    debug!("Start file service handler...");
+
     // Concatenate local file path
-    let file_path = state.path.join(path.clone());
+    let req_path = req.uri().path();
+    let file_path = match build_and_validate_path(state.path.clone(), req_path) {
+        Some(path) => path,
+        None => {
+            error!("Invalid path: {:?}", req_path);
+            return StatusCode::BAD_REQUEST.into_response();
+        }
+    };
 
     // check the path, if it is a directory, Generate a directory file list.
     // If it is a file, serve the file.
     if file_path.is_dir() {
         // For directory access, if there is no trailing slash "/", redirect to dir/.
-        let check = if path == PathBuf::from("") {
-            true
-        } else {
-            path.to_string_lossy().ends_with('/')
-        };
-
-        if !check {
-            Redirect::permanent(add_root_suffix(&path).as_str()).into_response()
-        } else {
-            match get_dir_list(path, file_path).await {
-                Ok(metadata) => {
-                    // Render an HTML page.
-                    let rendered = render_template(metadata).unwrap();
-                    Html(rendered).into_response()
-                }
-                Err(e) => {
-                    error!("Error reading directory: {:?}", e);
-                    StatusCode::INTERNAL_SERVER_ERROR.into_response()
+        match check_path_suffix(&req) {
+            Some(res) => res,
+            None => {
+                match get_dir_list(file_path).await {
+                    Ok(metadata) => {
+                        // Render an HTML page.
+                        match render_template(metadata) {
+                            Ok(rendered) => Html(rendered).into_response(),
+                            Err(e) => {
+                                error!("Error rendering template: {:?}", e);
+                                StatusCode::INTERNAL_SERVER_ERROR.into_response()
+                            }
+                        }
+                    }
+                    Err(e) => {
+                        error!("Error reading directory: {:?}", e);
+                        StatusCode::INTERNAL_SERVER_ERROR.into_response()
+                    }
                 }
             }
         }
@@ -107,8 +118,45 @@ async fn file_service(
     }
 }
 
+fn build_and_validate_path(base_path: impl AsRef<Path>, req_path: &str) -> Option<PathBuf> {
+    let path = req_path.trim_start_matches('/');
+    let path_decoded = percent_decode(path.as_bytes()).decode_utf8().ok()?;
+    let path_decoded = Path::new(&*path_decoded);
+    let mut path_to_file = base_path.as_ref().to_path_buf();
+    for component in path_decoded.components() {
+        match component {
+            Component::Normal(comp) => {
+                if Path::new(comp)
+                    .components()
+                    .all(|c| matches!(c, Component::Normal(_)))
+                {
+                    path_to_file.push(comp);
+                } else {
+                    return None;
+                }
+            }
+            Component::CurDir => {}
+            Component::Prefix(_) | Component::ParentDir | Component::RootDir => return None,
+        }
+    }
+    Some(path_to_file)
+}
+
+fn check_path_suffix(req: &Request) -> Option<Response> {
+    let original_uri = if let Some(path) = req.extensions().get::<OriginalUri>() {
+        path.0.path()
+    } else {
+        req.uri().path()
+    };
+    if !original_uri.ends_with('/') {
+        Some(Redirect::permanent(add_root_suffix(original_uri).as_str()).into_response())
+    } else {
+        None
+    }
+}
+
 // Generate a directory file list
-async fn get_dir_list(req_path: PathBuf, local_path: PathBuf) -> Result<DirList> {
+async fn get_dir_list(local_path: impl AsRef<Path>) -> Result<DirList> {
     let mut entries = fs::read_dir(local_path).await?;
     let mut df_entries = Vec::new();
     while let Some(entry) = entries.next_entry().await? {
@@ -130,7 +178,7 @@ async fn get_dir_list(req_path: PathBuf, local_path: PathBuf) -> Result<DirList>
             None => continue,
         };
         let path = name.clone();
-        let icon = format!("/{}.gif", etype);
+        let icon = format!("{}.gif", etype);
         let date_time: DateTime<Utc> = entry.metadata().await?.modified()?.into();
         let update = date_time.format("%Y-%m-%d %H:%M").to_string();
         let size_bytes = entry.metadata().await?.len();
@@ -156,20 +204,15 @@ async fn get_dir_list(req_path: PathBuf, local_path: PathBuf) -> Result<DirList>
         });
     }
     Ok(DirList {
-        parent: if let Some(parent) = req_path.parent() {
-            add_root_suffix(parent)
-        } else {
-            "/".to_string()
-        },
         entries: df_entries,
     })
 }
 
-fn add_root_suffix(path: &std::path::Path) -> String {
-    if path == PathBuf::from("") {
+fn add_root_suffix(path: &str) -> String {
+    if path.is_empty() {
         "/".to_string()
     } else {
-        format!("/{}/", path.display())
+        format!("{}/", path)
     }
 }
 
@@ -192,23 +235,21 @@ mod tests {
 
     #[test]
     fn test_add_root_suffix() {
-        let path = PathBuf::from("src");
-        let result = add_root_suffix(&path);
-        assert_eq!(result, "/src/");
+        let path = "src";
+        let result = add_root_suffix(path);
+        assert_eq!(result, "src/");
     }
 
     #[tokio::test]
     async fn test_get_dir_list() {
-        let path = PathBuf::from("cli/http.rs");
         let local_path = PathBuf::from("src");
-        let result = get_dir_list(path, local_path).await;
+        let result = get_dir_list(local_path).await;
         assert!(result.is_ok());
         let mut dir_list = result.unwrap();
         dir_list.entries.sort_by(|a, b| a.name.cmp(&b.name));
         assert_eq!(dir_list.entries.len(), 5);
         assert_eq!(dir_list.entries[0].etype, "folder");
         assert_eq!(dir_list.entries[0].name, "cli/");
-        assert_eq!(dir_list.parent, "/cli/")
     }
 
     #[tokio::test]
@@ -220,15 +261,54 @@ mod tests {
             .uri(Uri::from_str("/lib.rs").unwrap())
             .body(axum::body::Body::empty())
             .unwrap();
-        let res = file_service(State(state), Some(Path(PathBuf::from("lib.rs"))), req).await;
+        let res = file_service(State(state), req).await;
         assert_eq!(res.status(), StatusCode::OK);
         assert_eq!(res.headers().get("content-type").unwrap(), "text/x-rust");
     }
 
     #[test]
+    fn test_build_and_validate_path() {
+        let base_path = PathBuf::from("src");
+        let req_path = "/lib.rs";
+        let result = build_and_validate_path(base_path, req_path);
+        assert!(result.is_some());
+        let path = result.unwrap();
+        assert_eq!(path, PathBuf::from("src/lib.rs"));
+    }
+
+    #[test]
+    fn test_build_and_validate_path_invalid() {
+        let base_path = PathBuf::from("src");
+        let req_path = "/../lib.rs";
+        let result = build_and_validate_path(base_path, req_path);
+        assert!(result.is_none());
+    }
+
+    #[test]
+    fn test_check_path_suffix() {
+        let req = Request::builder()
+            .uri(Uri::from_str("/src").unwrap())
+            .body(axum::body::Body::empty())
+            .unwrap();
+        let result = check_path_suffix(&req);
+        assert!(result.is_some());
+        let res = result.unwrap();
+        assert_eq!(res.status(), StatusCode::PERMANENT_REDIRECT);
+    }
+
+    #[test]
+    fn test_check_path_suffix_no_redirect() {
+        let req = Request::builder()
+            .uri(Uri::from_str("/src/").unwrap())
+            .body(axum::body::Body::empty())
+            .unwrap();
+        let result = check_path_suffix(&req);
+        assert!(result.is_none());
+    }
+
+    #[test]
     fn test_render_template() {
         let data = DirList {
-            parent: "/".to_string(),
             entries: vec![DirEntry {
                 path: "src/".to_string(),
                 name: "src/".to_string(),
